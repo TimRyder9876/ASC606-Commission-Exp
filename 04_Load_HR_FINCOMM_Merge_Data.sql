@@ -2,18 +2,18 @@
 
 delete 
 from 
- FINCOMM.COM_hr_txns_calc_com_merge_all m
+ SCHEMA.COM_hr_txns_calc_com_merge_all m
 where
  m.pay_period_id IN (SELECT P.PP_ID
                      FROM
-                      FINCOMM.COM_HR_JEID_PP P
+                      SCHEMA.COM_HR_JEID_PP P
                      WHERE
                       P.TO_BE_PROCESSED = 'Y' AND
                       P.PROCESSED = 'N');
 COMMIT;
 
 /***** LOAD 'NCCP' DATA TO HR_TXNS_CALC_COM_MERGE_ALL *****/
-insert into  fincomm.com_hr_txns_calc_com_merge_all
+insert into  SCHEMA.com_hr_txns_calc_com_merge_all
  (pay_period_id, kgen_payeeid, rep_type, pp_active, css_payeeid,
   canvass_id, customer_id, cust_type, prod_type, product_code,
   product_issue_num, thryv_ind, dar_ind, cancel_ind, cancel_match, cancel_pay_period,
@@ -132,8 +132,8 @@ from
      '' AS thld_met_ind,
      '' AS debit_proration_ind
     from 
-     fincomm.fincomm_ph_nccp_pp_detail p
-      left join fincomm.com_hr_txns_stage_all s
+     SCHEMA.fincomm_ph_nccp_pp_detail p
+      left join SCHEMA.com_hr_txns_stage_all s
         on 
          p.pay_period_id = s.pay_period_id and
          p.rep_num = s.kgen_payeeid
@@ -144,17 +144,17 @@ from
          r.kgen_payeeid,
          sum(i.ern_amt) as ern_amt
         from 
-         FINCOMM.FINCOMM_PP_INCENTIVE_DATA i
-         inner join fincomm.fincomm_pay_period_13mth pp
+         SCHEMA.FINCOMM_PP_INCENTIVE_DATA i
+         inner join SCHEMA.fincomm_pay_period_13mth pp
           on i.ern_pay_period_dte = pp.cheque_date
-         inner join FINCOMM.FINCOMM_SCP_REP_LIST r
+         inner join SCHEMA.FINCOMM_SCP_REP_LIST r
           on pp.pay_period_id = r.pay_period_id and
              i.employee_id = r.clock_id          
         where
          i.ERN_CDE IN ('COMSC','COMBC') and
          pp.PAY_PERIOD_ID = (SELECT MAX(P.PP_ID) AS PP_ID
                              FROM
-                              FINCOMM.COM_HR_JEID_PP P
+                              SCHEMA.COM_HR_JEID_PP P
                              WHERE
                               P.TO_BE_PROCESSED = 'Y' AND
                               P.PROCESSED = 'N')
@@ -170,7 +170,7 @@ from
        p.is_last = 1 and
        P.PAY_PERIOD_ID = (SELECT MAX(P.PP_ID) AS PP_ID
                      FROM
-                      FINCOMM.COM_HR_JEID_PP P
+                      SCHEMA.COM_HR_JEID_PP P
                      WHERE
                       P.TO_BE_PROCESSED = 'Y' AND
                       P.PROCESSED = 'N')
@@ -179,7 +179,7 @@ COMMIT;
 
 /***** UPDATE MERGE FIELDS CALC_NEW_FINAL_COM AND CALC_RENEW_FINAL_COM FOR NCCP AND COLN *****/
 /***** THIS SECTION HAS BEEN MODIFIED DUE TO AN ALLOCATION AMPLIFICATION ISSUE 06-09-2021 TICKET INC-682830 *****/
-update fincomm.com_hr_txns_calc_com_merge_all m
+update SCHEMA.com_hr_txns_calc_com_merge_all m
 set 
   m.CALC_NEW_FINAL_COM =
    case when m.payment_amt = 0 then 0
@@ -283,7 +283,7 @@ where
  m.rep_type in('NCCP') and
  m.pay_period_id IN (SELECT max(P.PP_ID) as pp_id
                      FROM
-                      FINCOMM.COM_HR_JEID_PP P
+                      SCHEMA.COM_HR_JEID_PP P
                      WHERE
                       P.TO_BE_PROCESSED = 'Y' AND
                       P.PROCESSED = 'N');

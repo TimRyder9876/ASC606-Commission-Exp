@@ -2,17 +2,17 @@
 
 DELETE
 FROM
- FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL C
+ SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL C
 WHERE
  C.PAY_PERIOD_ID IN (SELECT P.PP_ID
                      FROM
-                      FINCOMM.COM_HR_JEID_PP P
+                      SCHEMA.COM_HR_JEID_PP P
                      WHERE
                       P.TO_BE_PROCESSED = 'Y' AND
                       P.PROCESSED = 'N');
 COMMIT;                       
 
-INSERT INTO FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL
+INSERT INTO SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL
  (PRODUCT_TYPE, PAY_PERIOD_ID, KGEN_PAYEEID, CUSTOMER_ID, ALT_CUSTOMER_ID, 
   COMP_YEAR, CUST_NI_AMT, CUST_PI_AMT, CUST_RENEWAL_AMT, CUST_INCREASE_AMT, 
   CUST_NEW_AMT, CUST_DIG_NEW_SEM_AMT, RENEWAL_RATE, INCREASE_RATE, NEW_RATE,
@@ -43,8 +43,8 @@ SELECT
  'NA' AS MATCH_METHOD,
  N.COM_PAYOUT_IND
 FROM
- FINCOMM.FINCOMM_NCCP_CUSTDET_RPT N
- INNER JOIN FINCOMM.FINCOMM_SCP_REP_LIST R
+ SCHEMA.FINCOMM_NCCP_CUSTDET_RPT N
+ INNER JOIN SCHEMA.FINCOMM_SCP_REP_LIST R
      ON
        R.KGEN_PAYEEID = N.KGEN_PAYEEID AND
        R.PAY_PERIOD_ID = N.PAY_PERIOD_ID AND
@@ -53,7 +53,7 @@ FROM
    N.COM_PAYOUT_IND = 1 AND
    N.PAY_PERIOD_ID IN (SELECT P.PP_ID
                      FROM
-                      FINCOMM.COM_HR_JEID_PP P
+                      SCHEMA.COM_HR_JEID_PP P
                      WHERE
                       P.TO_BE_PROCESSED = 'Y' AND
                       P.PROCESSED = 'N')
@@ -73,10 +73,10 @@ GROUP BY
 COMMIT;
 
 /***** CREATE TMP_HR_TXNS_TRANS1_ALL TABLE *****/
-TRUNCATE TABLE FINCOMM.COM_HR_TXNS_TRANS1_ALL;
+TRUNCATE TABLE SCHEMA.COM_HR_TXNS_TRANS1_ALL;
 COMMIT;
 
-INSERT INTO FINCOMM.COM_HR_TXNS_TRANS1_ALL
+INSERT INTO SCHEMA.COM_HR_TXNS_TRANS1_ALL
  (KGEN_PAYEEID, PAY_PERIOD_ID, ORIG_PAY_PERIOD_ID, CUSTOMER_ID, WW_CUSTOMER_ID, PRODUCT_TYPE,
   CUST_TYPE, COMP_YEAR, ITEM_ID, SV_ITEM_ID, PRODUCT_CODE, PRODUCT_ISSUE_NUM,
   UDAC_CODE, NI_AMT, UNQ_PI_AMT, PI_AMT, PROD_TYPE,
@@ -140,10 +140,10 @@ FROM
    T1.HOME_DB, -- ADDED 5-27-2023
    T1.EXTRACT_DATE -- ADDED 5-27-2023
   FROM    
-    FINCOMM.FINCOMM_SF_REP_TRANS T1
-    LEFT JOIN FINREPO.DIGITAL_UDAC_HIERARCHY@ORAFIN.DB.YELLOWPAGES.COM DUH
+    SCHEMA.FINCOMM_SF_REP_TRANS T1
+    LEFT JOIN FINREPO.DIGITAL_UDAC_HIERARCHY@ORACLEDB DUH
        ON T1.UDAC_CODE = DUH.UDAC_CODE
-    INNER JOIN FINCOMM.FINCOMM_SCP_REP_LIST R
+    INNER JOIN SCHEMA.FINCOMM_SCP_REP_LIST R
      ON
        R.KGEN_PAYEEID = T1.KGEN_PAYEEID AND
        R.PAY_PERIOD_ID = T1.PAY_PERIOD_ID AND
@@ -154,27 +154,27 @@ FROM
   ) T
  CROSS JOIN (SELECT MAX(P.PP_ID) AS PP_ID
              FROM
-              FINCOMM.COM_HR_JEID_PP P
+              SCHEMA.COM_HR_JEID_PP P
              WHERE
               P.TO_BE_PROCESSED = 'Y' AND
               P.PROCESSED = 'N') P
 WHERE
  T.PAY_PERIOD_ID IN (SELECT P.PP_ID
                      FROM
-                      FINCOMM.COM_HR_JEID_PP P
+                      SCHEMA.COM_HR_JEID_PP P
                      WHERE
                       P.TO_BE_PROCESSED = 'Y' AND
                       P.PROCESSED = 'N'
                      UNION ALL 
                      SELECT MAX(PP.PP_ID) AS PRIOR_PP
                      FROM
-                      FINCOMM.COM_HR_JEID_PP PP
+                      SCHEMA.COM_HR_JEID_PP PP
 --                      INNER JOIN (SELECT MAX(PP.YR_MTH)-1 AS PRIOR_MTH 
---                                  FROM FINCOMM.COM_HR_JEID_PP PP
+--                                  FROM SCHEMA.COM_HR_JEID_PP PP
 --                                  WHERE PP.TO_BE_PROCESSED = 'Y' AND PP.PROCESSED = 'N') X
                       /* Changed 02-02-2024 january date*/   
                       INNER JOIN (SELECT max(to_char(add_months(to_date(PP.YR_MTH,'YYYYMM'),-1),'YYYYMM')) AS PRIOR_MTH 
-                                  FROM FINCOMM.COM_HR_JEID_PP PP
+                                  FROM SCHEMA.COM_HR_JEID_PP PP
                                   WHERE PP.TO_BE_PROCESSED = 'Y' AND PP.PROCESSED = 'N') X
                       ON PP.YR_MTH = X.PRIOR_MTH);
 COMMIT;       
@@ -183,11 +183,11 @@ COMMIT;
 /***** DELETE PAY PERIODS TO PROCESS FROM STAGE LOAD *****/
 DELETE
 FROM
- FINCOMM.COM_HR_TXNS_STAGE_ALL S
+ SCHEMA.COM_HR_TXNS_STAGE_ALL S
 WHERE
  S.PAY_PERIOD_ID IN (SELECT P.PP_ID
                      FROM
-                      FINCOMM.COM_HR_JEID_PP P
+                      SCHEMA.COM_HR_JEID_PP P
                      WHERE
                       P.TO_BE_PROCESSED = 'Y' AND
                       P.PROCESSED = 'N');
@@ -219,7 +219,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
          WHEN C.CUST_NI_AMT = 0 AND C.CUST_PI_AMT = 0 THEN 'CUSTDET_NI_AND_PI_AMTS_ARE_ZERO'
       END AS QUERY_MATCH
   FROM 
-   FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL C
+   SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL C
   WHERE
    C.MATCH_METHOD = 'NA' AND
    C.COM_PAYOUT_IND = 1 AND
@@ -228,7 +228,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
    C.SOURCE = 'N' AND
    C.PAY_PERIOD_ID IN (SELECT P.PP_ID
                      FROM
-                      FINCOMM.COM_HR_JEID_PP P
+                      SCHEMA.COM_HR_JEID_PP P
                      WHERE
                       P.TO_BE_PROCESSED = 'Y' AND
                       P.PROCESSED = 'N')
@@ -236,7 +236,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
 
 COMMIT;
 
-UPDATE FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL A
+UPDATE SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL A
 SET
  A.MATCH_METHOD = 'M0'
 WHERE
@@ -244,7 +244,7 @@ WHERE
               SELECT DISTINCT
                S.CUSTDET_TRANS_ID
               FROM 
-               FINCOMM.COM_HR_TXNS_STAGE_ALL S
+               SCHEMA.COM_HR_TXNS_STAGE_ALL S
               WHERE
                S.QUERY_MATCH IN ('CUSTDET_COM_AMT_IS_ZERO','CUSTDET_NI_AND_PI_AMTS_ARE_ZERO'))
                AND A.MATCH_METHOD IN ('NA');
@@ -288,7 +288,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
     WHEN ABS(C.CUST_NI_AMT-T.CUMULATIVE_NI_AMT) + ABS(C.CUST_PI_AMT-T.CUMULATIVE_PI_AMT) = 0 THEN 'PP_WW_CUST_NI_AND_PI_MATCH_1'
     END AS QUERY_MATCH
   FROM    
-   FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL C
+   SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL C
    INNER JOIN
      (
         SELECT
@@ -361,7 +361,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                   WHEN UPPER(T.HOME_DB) LIKE '%MOVE DAR CANCEL TO PRIOR PP%' AND
                        SUBSTR(UPPER(T.HOME_DB), INSTR(UPPER(T.HOME_DB), 'MOVE DAR CANCEL TO PRIOR PP',1)+28,7) IN (SELECT P.PP_ID
                                          FROM
-                                          FINCOMM.COM_HR_JEID_PP P
+                                          SCHEMA.COM_HR_JEID_PP P
                                          WHERE
                                           P.TO_BE_PROCESSED = 'Y' AND
                                           P.PROCESSED = 'N')  
@@ -369,13 +369,13 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                   WHEN UPPER(T.HOME_DB) LIKE '%MOVE DAR CANCEL TO PRIOR PP%' AND
                        SUBSTR(UPPER(T.HOME_DB), INSTR(UPPER(T.HOME_DB), 'MOVE DAR CANCEL TO PRIOR PP',1)+28,7) IN (SELECT P.PP_ID
                                          FROM
-                                          FINCOMM.COM_HR_JEID_PP P
+                                          SCHEMA.COM_HR_JEID_PP P
                                          WHERE
                                           P.TO_BE_PROCESSED = 'Y' AND
                                           P.PROCESSED = 'Y') AND
                        T.ORIG_PAY_PERIOD_ID IN (SELECT P.PP_ID
                                          FROM
-                                          FINCOMM.COM_HR_JEID_PP P
+                                          SCHEMA.COM_HR_JEID_PP P
                                          WHERE
                                           P.TO_BE_PROCESSED = 'Y' AND
                                           P.PROCESSED = 'Y') AND
@@ -384,7 +384,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                   WHEN T.ORIG_PAY_PERIOD_ID <> T.PAY_PERIOD_ID AND
                        T.ORIG_PAY_PERIOD_ID IN (SELECT P.PP_ID
                                          FROM
-                                          FINCOMM.COM_HR_JEID_PP P
+                                          SCHEMA.COM_HR_JEID_PP P
                                          WHERE
                                           P.TO_BE_PROCESSED = 'Y' AND
                                           P.PROCESSED = 'N')
@@ -392,7 +392,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                   WHEN UPPER(T.HOME_DB) LIKE '%DAR CANCEL%' AND
                        T.ORIG_PAY_PERIOD_ID IN (SELECT P.PP_ID
                                                 FROM
-                                                 FINCOMM.COM_HR_JEID_PP P
+                                                 SCHEMA.COM_HR_JEID_PP P
                                                 WHERE
                                                  P.TO_BE_PROCESSED = 'Y' AND
                                                  P.PROCESSED = 'N')  
@@ -401,7 +401,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                        T.ORIG_PAY_PERIOD_ID = T.PAY_PERIOD_ID AND
                        T.ORIG_PAY_PERIOD_ID IN (SELECT P.PP_ID
                                                 FROM
-                                                 FINCOMM.COM_HR_JEID_PP P
+                                                 SCHEMA.COM_HR_JEID_PP P
                                                 WHERE
                                                  P.TO_BE_PROCESSED = 'Y' AND
                                                  P.PROCESSED = 'N') 
@@ -410,7 +410,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                   WHEN UPPER(T.HOME_DB) LIKE '%DAR NTBOOST REVERSAL DAR FORCE%' AND
                        T.ORIG_PAY_PERIOD_ID IN (SELECT P.PP_ID
                                                 FROM
-                                                 FINCOMM.COM_HR_JEID_PP P
+                                                 SCHEMA.COM_HR_JEID_PP P
                                                 WHERE
                                                  P.TO_BE_PROCESSED = 'Y' AND
                                                  P.PROCESSED = 'Y') 
@@ -427,16 +427,16 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
              T.PROD_TYPE, T.UDAC_CODE, T.DAR_IND, T.CANCEL_IND, T.THRYV_IND,
              T.TRANS_ID
             FROM
-             FINCOMM.COM_HR_TXNS_TRANS1_ALL T
-             INNER JOIN FINCOMM.COM_HR_JEID_PP P
+             SCHEMA.COM_HR_TXNS_TRANS1_ALL T
+             INNER JOIN SCHEMA.COM_HR_JEID_PP P
               ON T.PAY_PERIOD_ID = P.PP_ID AND
                  P.TO_BE_PROCESSED = 'Y' AND
                  P.PROCESSED = 'N'
-              CROSS JOIN (SELECT MAX(PP.YR_MTH) AS CURRENT_MTH FROM FINCOMM.COM_HR_JEID_PP PP
+              CROSS JOIN (SELECT MAX(PP.YR_MTH) AS CURRENT_MTH FROM SCHEMA.COM_HR_JEID_PP PP
                           WHERE PP.TO_BE_PROCESSED = 'Y' AND PP.PROCESSED = 'N') X
               CROSS JOIN (SELECT MAX(X.PREVIOUS_MTH) AS PRIOR_MTH, MAX(X.PRIOR_2_MTH) AS PRIOR_2_MTH
                           FROM (SELECT YR_MTH AS PREVIOUS_MTH, LAG(YR_MTH,1,0) OVER (ORDER BY YR_MTH) AS PRIOR_2_MTH
-                                FROM (SELECT DISTINCT PP.YR_MTH FROM FINCOMM.COM_HR_JEID_PP PP
+                                FROM (SELECT DISTINCT PP.YR_MTH FROM SCHEMA.COM_HR_JEID_PP PP
                                 WHERE PP.TO_BE_PROCESSED = 'Y' AND PP.PROCESSED = 'Y') X ) X   ) Y 
          ) X
         WHERE
@@ -458,7 +458,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
       C.MATCH_METHOD IN('NA') AND
       C.PAY_PERIOD_ID IN (SELECT P.PP_ID
                      FROM
-                      FINCOMM.COM_HR_JEID_PP P
+                      SCHEMA.COM_HR_JEID_PP P
                      WHERE
                       P.TO_BE_PROCESSED = 'Y' AND
                       P.PROCESSED = 'N')
@@ -469,7 +469,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
 ;
 COMMIT;
 
-UPDATE FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL A
+UPDATE SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL A
 SET
  A.MATCH_METHOD = 'M1'
 WHERE
@@ -477,7 +477,7 @@ WHERE
               SELECT DISTINCT
                S.CUSTDET_TRANS_ID
               FROM 
-               FINCOMM.COM_HR_TXNS_STAGE_ALL S
+               SCHEMA.COM_HR_TXNS_STAGE_ALL S
               WHERE
                S.QUERY_MATCH IN ('PP_WW_CUST_NI_AND_UNQ_PI_MATCH_1','PP_WW_CUST_NI_AND_PI_MATCH_1'))
                AND A.MATCH_METHOD IN ('NA');
@@ -525,7 +525,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
           THEN 'PP_WW_CUST_CUM_NI_AND_PI_MATCH_2'
     END AS QUERY_MATCH
   FROM    
-   FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL C
+   SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL C
    INNER JOIN
      (
         SELECT
@@ -592,7 +592,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                   WHEN UPPER(T.HOME_DB) LIKE '%MOVE DAR CANCEL TO PRIOR PP%' AND
                        SUBSTR(UPPER(T.HOME_DB), INSTR(UPPER(T.HOME_DB), 'MOVE DAR CANCEL TO PRIOR PP',1)+28,7) IN (SELECT P.PP_ID
                                          FROM
-                                          FINCOMM.COM_HR_JEID_PP P
+                                          SCHEMA.COM_HR_JEID_PP P
                                          WHERE
                                           P.TO_BE_PROCESSED = 'Y' AND
                                           P.PROCESSED = 'N')  
@@ -600,13 +600,13 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                   WHEN UPPER(T.HOME_DB) LIKE '%MOVE DAR CANCEL TO PRIOR PP%' AND
                        SUBSTR(UPPER(T.HOME_DB), INSTR(UPPER(T.HOME_DB), 'MOVE DAR CANCEL TO PRIOR PP',1)+28,7) IN (SELECT P.PP_ID
                                          FROM
-                                          FINCOMM.COM_HR_JEID_PP P
+                                          SCHEMA.COM_HR_JEID_PP P
                                          WHERE
                                           P.TO_BE_PROCESSED = 'Y' AND
                                           P.PROCESSED = 'Y') AND
                        T.ORIG_PAY_PERIOD_ID IN (SELECT P.PP_ID
                                          FROM
-                                          FINCOMM.COM_HR_JEID_PP P
+                                          SCHEMA.COM_HR_JEID_PP P
                                          WHERE
                                           P.TO_BE_PROCESSED = 'Y' AND
                                           P.PROCESSED = 'Y') AND
@@ -615,7 +615,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                   WHEN T.ORIG_PAY_PERIOD_ID <> T.PAY_PERIOD_ID AND
                        T.ORIG_PAY_PERIOD_ID IN (SELECT P.PP_ID
                                          FROM
-                                          FINCOMM.COM_HR_JEID_PP P
+                                          SCHEMA.COM_HR_JEID_PP P
                                          WHERE
                                           P.TO_BE_PROCESSED = 'Y' AND
                                           P.PROCESSED = 'N')
@@ -624,7 +624,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                        T.ORIG_PAY_PERIOD_ID = T.PAY_PERIOD_ID AND
                        T.ORIG_PAY_PERIOD_ID IN (SELECT P.PP_ID
                                                 FROM
-                                                 FINCOMM.COM_HR_JEID_PP P
+                                                 SCHEMA.COM_HR_JEID_PP P
                                                 WHERE
                                                  P.TO_BE_PROCESSED = 'Y' AND
                                                  P.PROCESSED = 'N') 
@@ -642,16 +642,16 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
              T.PROD_TYPE, T.UDAC_CODE, T.DAR_IND, T.CANCEL_IND, T.THRYV_IND,
              T.TRANS_ID
             FROM
-             FINCOMM.COM_HR_TXNS_TRANS1_ALL T
-             INNER JOIN FINCOMM.COM_HR_JEID_PP P
+             SCHEMA.COM_HR_TXNS_TRANS1_ALL T
+             INNER JOIN SCHEMA.COM_HR_JEID_PP P
               ON T.PAY_PERIOD_ID = P.PP_ID AND
                  P.TO_BE_PROCESSED = 'Y' AND
                  P.PROCESSED = 'N'
-              CROSS JOIN (SELECT MAX(PP.YR_MTH) AS CURRENT_MTH FROM FINCOMM.COM_HR_JEID_PP PP
+              CROSS JOIN (SELECT MAX(PP.YR_MTH) AS CURRENT_MTH FROM SCHEMA.COM_HR_JEID_PP PP
                           WHERE PP.TO_BE_PROCESSED = 'Y' AND PP.PROCESSED = 'N') X
               CROSS JOIN (SELECT MAX(X.PREVIOUS_MTH) AS PRIOR_MTH, MAX(X.PRIOR_2_MTH) AS PRIOR_2_MTH
                           FROM (SELECT YR_MTH AS PREVIOUS_MTH, LAG(YR_MTH,1,0) OVER (ORDER BY YR_MTH) AS PRIOR_2_MTH
-                                FROM (SELECT DISTINCT PP.YR_MTH FROM FINCOMM.COM_HR_JEID_PP PP
+                                FROM (SELECT DISTINCT PP.YR_MTH FROM SCHEMA.COM_HR_JEID_PP PP
                                 WHERE PP.TO_BE_PROCESSED = 'Y' AND PP.PROCESSED = 'Y') X ) X   ) Y            
          ) X
          INNER JOIN 
@@ -666,10 +666,10 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
            SUM(C.CUST_PI_AMT) OVER 
               (PARTITION BY  C.KGEN_PAYEEID, C.CUSTOMER_ID, C.COMP_YEAR, C.PAY_PERIOD_ID
                    ORDER BY C.PAY_PERIOD_ID) AS CUST_CUMULATIVE_PI_AMT         
-          FROM FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL C
+          FROM SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL C
           WHERE MATCH_METHOD = 'NA' AND
             C.PAY_PERIOD_ID IN (SELECT P.PP_ID
-                                FROM FINCOMM.COM_HR_JEID_PP P
+                                FROM SCHEMA.COM_HR_JEID_PP P
                                 WHERE P.TO_BE_PROCESSED = 'Y' AND
                                       P.PROCESSED = 'N')) Y
          ON Y.PAY_PERIOD_ID = X.PAY_PERIOD_ID AND
@@ -693,7 +693,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
       C.MATCH_METHOD IN('NA') AND
       C.PAY_PERIOD_ID IN (SELECT P.PP_ID
                      FROM
-                      FINCOMM.COM_HR_JEID_PP P
+                      SCHEMA.COM_HR_JEID_PP P
                      WHERE
                       P.TO_BE_PROCESSED = 'Y' AND
                       P.PROCESSED = 'N')
@@ -708,7 +708,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
 ;
 COMMIT;
 
-UPDATE FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL A
+UPDATE SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL A
 SET
  A.MATCH_METHOD = 'M2'
 WHERE
@@ -716,7 +716,7 @@ WHERE
               SELECT DISTINCT
                S.CUSTDET_TRANS_ID
               FROM 
-               FINCOMM.COM_HR_TXNS_STAGE_ALL S
+               SCHEMA.COM_HR_TXNS_STAGE_ALL S
               WHERE
                S.QUERY_MATCH IN ('PP_WW_CUST_NI_AND_UNQ_PI_MATCH_2','PP_WW_CUST_NI_AND_PI_MATCH_2',
                                  'PP_WW_CUST_CUM_NI_AND_UNQ_PI_MATCH_2','PP_WW_CUST_CUM_NI_AND_PI_MATCH_2'))
@@ -757,7 +757,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
         WHEN ABS(C.CUST_NI_AMT-T.CUMULATIVE_NI_AMT) + ABS(C.CUST_PI_AMT-T.CUMULATIVE_PI_AMT) = 0  
           THEN 'PP_WW_CUST_NI_AND_PI_MATCH_3' END AS QUERY_MATCH
   FROM    
-   FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL C
+   SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL C
    INNER JOIN
      (
         SELECT
@@ -825,7 +825,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                   WHEN UPPER(T.HOME_DB) LIKE '%MOVE DAR CANCEL TO PRIOR PP%' AND
                        SUBSTR(UPPER(T.HOME_DB), INSTR(UPPER(T.HOME_DB), 'MOVE DAR CANCEL TO PRIOR PP',1)+28,7) IN (SELECT P.PP_ID
                                          FROM
-                                          FINCOMM.COM_HR_JEID_PP P
+                                          SCHEMA.COM_HR_JEID_PP P
                                          WHERE
                                           P.TO_BE_PROCESSED = 'Y' AND
                                           P.PROCESSED = 'N')  
@@ -833,13 +833,13 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                  WHEN UPPER(T.HOME_DB) LIKE '%MOVE DAR CANCEL TO PRIOR PP%' AND
                        SUBSTR(UPPER(T.HOME_DB), INSTR(UPPER(T.HOME_DB), 'MOVE DAR CANCEL TO PRIOR PP',1)+28,7) IN (SELECT P.PP_ID
                                          FROM
-                                          FINCOMM.COM_HR_JEID_PP P
+                                          SCHEMA.COM_HR_JEID_PP P
                                          WHERE
                                           P.TO_BE_PROCESSED = 'Y' AND
                                           P.PROCESSED = 'Y') AND
                        T.ORIG_PAY_PERIOD_ID IN (SELECT P.PP_ID
                                          FROM
-                                          FINCOMM.COM_HR_JEID_PP P
+                                          SCHEMA.COM_HR_JEID_PP P
                                          WHERE
                                           P.TO_BE_PROCESSED = 'Y' AND
                                           P.PROCESSED = 'Y') AND
@@ -848,7 +848,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                   WHEN T.ORIG_PAY_PERIOD_ID <> T.PAY_PERIOD_ID AND
                        T.ORIG_PAY_PERIOD_ID IN (SELECT P.PP_ID
                                          FROM
-                                          FINCOMM.COM_HR_JEID_PP P
+                                          SCHEMA.COM_HR_JEID_PP P
                                          WHERE
                                           P.TO_BE_PROCESSED = 'Y' AND
                                           P.PROCESSED = 'N')
@@ -856,7 +856,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                   WHEN UPPER(T.HOME_DB) LIKE '%DAR CANCEL%' AND
                        T.ORIG_PAY_PERIOD_ID IN (SELECT P.PP_ID
                                                 FROM
-                                                 FINCOMM.COM_HR_JEID_PP P
+                                                 SCHEMA.COM_HR_JEID_PP P
                                                 WHERE
                                                  P.TO_BE_PROCESSED = 'Y' AND
                                                  P.PROCESSED = 'N')  
@@ -865,7 +865,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
                        T.ORIG_PAY_PERIOD_ID = T.PAY_PERIOD_ID AND
                        T.ORIG_PAY_PERIOD_ID IN (SELECT P.PP_ID
                                                 FROM
-                                                 FINCOMM.COM_HR_JEID_PP P
+                                                 SCHEMA.COM_HR_JEID_PP P
                                                 WHERE
                                                  P.TO_BE_PROCESSED = 'Y' AND
                                                  P.PROCESSED = 'N') 
@@ -882,16 +882,16 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
              T.PROD_TYPE, T.UDAC_CODE, T.DAR_IND, T.CANCEL_IND, T.THRYV_IND,
              T.TRANS_ID
             FROM
-             FINCOMM.COM_HR_TXNS_TRANS1_ALL T
-             INNER JOIN FINCOMM.COM_HR_JEID_PP P
+             SCHEMA.COM_HR_TXNS_TRANS1_ALL T
+             INNER JOIN SCHEMA.COM_HR_JEID_PP P
               ON T.PAY_PERIOD_ID = P.PP_ID AND
                  P.TO_BE_PROCESSED = 'Y' AND
                  P.PROCESSED = 'N'
-              CROSS JOIN (SELECT MAX(PP.YR_MTH) AS CURRENT_MTH FROM FINCOMM.COM_HR_JEID_PP PP
+              CROSS JOIN (SELECT MAX(PP.YR_MTH) AS CURRENT_MTH FROM SCHEMA.COM_HR_JEID_PP PP
                           WHERE PP.TO_BE_PROCESSED = 'Y' AND PP.PROCESSED = 'N') X
               CROSS JOIN (SELECT MAX(X.PREVIOUS_MTH) AS PRIOR_MTH, MAX(X.PRIOR_2_MTH) AS PRIOR_2_MTH
                           FROM (SELECT YR_MTH AS PREVIOUS_MTH, LAG(YR_MTH,1,0) OVER (ORDER BY YR_MTH) AS PRIOR_2_MTH
-                                FROM (SELECT DISTINCT PP.YR_MTH FROM FINCOMM.COM_HR_JEID_PP PP
+                                FROM (SELECT DISTINCT PP.YR_MTH FROM SCHEMA.COM_HR_JEID_PP PP
                                 WHERE PP.TO_BE_PROCESSED = 'Y' AND PP.PROCESSED = 'Y') X ) X   ) Y
          ) X
         WHERE
@@ -910,7 +910,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
       C.MATCH_METHOD IN('NA') AND
       C.PAY_PERIOD_ID IN (SELECT P.PP_ID
                      FROM
-                      FINCOMM.COM_HR_JEID_PP P
+                      SCHEMA.COM_HR_JEID_PP P
                      WHERE
                       P.TO_BE_PROCESSED = 'Y' AND
                       P.PROCESSED = 'N')
@@ -922,7 +922,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
 
 COMMIT;
 
-UPDATE FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL A
+UPDATE SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL A
 SET
  A.MATCH_METHOD = 'M3'
 WHERE
@@ -930,7 +930,7 @@ WHERE
               SELECT DISTINCT
                S.CUSTDET_TRANS_ID
               FROM 
-               FINCOMM.COM_HR_TXNS_STAGE_ALL S
+               SCHEMA.COM_HR_TXNS_STAGE_ALL S
               WHERE
                S.QUERY_MATCH IN ('PP_WW_CUST_NI_AND_UNQ_PI_MATCH_3','PP_WW_CUST_NI_AND_PI_MATCH_3'))
                AND A.MATCH_METHOD IN ('NA');
@@ -964,14 +964,14 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
 --         ELSE 'NO_QUALIFIED_MATCH_TO_TRANS'
 --      END AS QUERY_MATCH
   FROM 
-   FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL C
+   SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL C
   WHERE
    C.MATCH_METHOD = 'NA' AND
    C.COM_PAYOUT_IND = 1 AND
    C.SOURCE = 'N' AND
    C.PAY_PERIOD_ID IN (SELECT P.PP_ID
                      FROM
-                      FINCOMM.COM_HR_JEID_PP P
+                      SCHEMA.COM_HR_JEID_PP P
                      WHERE
                       P.TO_BE_PROCESSED = 'Y' AND
                       P.PROCESSED = 'N')
@@ -979,7 +979,7 @@ INSERT INTO COM_HR_TXNS_STAGE_ALL
 
 COMMIT;
 
-UPDATE FINCOMM.COM_HR_TXNS_CUSTDET_RPT_ALL A
+UPDATE SCHEMA.COM_HR_TXNS_CUSTDET_RPT_ALL A
 SET
  A.MATCH_METHOD = 'M4'
 WHERE
@@ -987,7 +987,7 @@ WHERE
               SELECT DISTINCT
                S.CUSTDET_TRANS_ID
               FROM 
-               FINCOMM.COM_HR_TXNS_STAGE_ALL S
+               SCHEMA.COM_HR_TXNS_STAGE_ALL S
               WHERE
                S.QUERY_MATCH IN (/*'CUSTDET_COM_AMT_IS_ZERO','CUSTDET_NI_AND_PI_AMTS_ARE_ZERO',*/'NO_QUALIFIED_MATCH_TO_TRANS'))
                AND A.MATCH_METHOD IN ('NA');
